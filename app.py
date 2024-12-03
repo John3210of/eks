@@ -11,6 +11,9 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 @app.route('/regions', methods=['GET'])
 def get_regions():
+    if not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
+        return jsonify({"error": "Database environment variables are not set"}), 500
+
     try:
         connection = psycopg2.connect(
             host=DB_HOST,
@@ -19,18 +22,15 @@ def get_regions():
             password=DB_PASSWORD
         )
         cursor = connection.cursor()
-
         cursor.execute("SELECT * FROM region;")
         rows = cursor.fetchall()
-
         regions = [{"id": row[0], "created_at": row[1].isoformat(), "region_name": row[2]} for row in rows]
-
         cursor.close()
         connection.close()
 
         return jsonify(regions)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Failed to connect to the database: {str(e)}"}), 500
 
 @app.route('/', methods=['GET'])
 def health_check():
